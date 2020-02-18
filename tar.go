@@ -233,16 +233,27 @@ func (t *Tar) untarFile(f File, to string) error {
 	case tar.TypeDir:
 		return mkdir(to, f.Mode())
 	case tar.TypeReg, tar.TypeRegA, tar.TypeChar, tar.TypeBlock, tar.TypeFifo, tar.TypeGNUSparse:
-		return writeNewFile(to, f, f.Mode())
+		err := writeNewFile(to, f, f.Mode())
+		if err == nil {
+			return os.Chtimes(to, hdr.ModTime, hdr.ModTime)
+		}
 	case tar.TypeSymlink:
-		return writeNewSymbolicLink(to, hdr.Linkname)
+		err := writeNewSymbolicLink(to, hdr.Linkname)
+		if err == nil {
+			return os.Chtimes(to, hdr.ModTime, hdr.ModTime)
+		}
 	case tar.TypeLink:
-		return writeNewHardLink(to, filepath.Join(to, hdr.Linkname))
+		err := writeNewHardLink(to, filepath.Join(to, hdr.Linkname))
+		if err == nil {
+			return os.Chtimes(to, hdr.ModTime, hdr.ModTime)
+		}
 	case tar.TypeXGlobalHeader:
 		return nil // ignore the pax global header from git-generated tarballs
 	default:
 		return fmt.Errorf("%s: unknown type flag: %c", hdr.Name, hdr.Typeflag)
 	}
+
+	return nil
 }
 
 func (t *Tar) writeWalk(source, topLevelFolder, destination string) error {

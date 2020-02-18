@@ -1,4 +1,4 @@
-module github.com/mholt/archiver/v3
+module github.com/lissyx/archiver
 
 go 1.12
 
