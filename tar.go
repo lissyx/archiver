@@ -228,13 +228,25 @@ func untarFile(tr *tar.Reader, header *tar.Header, destination string) error {
 
 	switch header.Typeflag {
 	case tar.TypeDir:
-		return mkdir(destpath)
+		err := mkdir(destpath)
+		if err == nil {
+			return os.Chtimes(destpath, header.ModTime, header.ModTime)
+		}
 	case tar.TypeReg, tar.TypeRegA, tar.TypeChar, tar.TypeBlock, tar.TypeFifo:
-		return writeNewFile(destpath, tr, header.FileInfo().Mode())
+		err := writeNewFile(destpath, tr, header.FileInfo().Mode())
+		if err == nil {
+			return os.Chtimes(destpath, header.ModTime, header.ModTime)
+		}
 	case tar.TypeSymlink:
-		return writeNewSymbolicLink(destpath, header.Linkname)
+		err := writeNewSymbolicLink(destpath, header.Linkname)
+		if err == nil {
+			return os.Chtimes(destpath, header.ModTime, header.ModTime)
+		}
 	case tar.TypeLink:
-		return writeNewHardLink(destpath, filepath.Join(destination, header.Linkname))
+		err := writeNewHardLink(destpath, filepath.Join(destination, header.Linkname))
+		if err == nil {
+			return os.Chtimes(destpath, header.ModTime, header.ModTime)
+		}
 	case tar.TypeXGlobalHeader:
 		// ignore the pax global header from git generated tarballs
 		return nil
